@@ -5,7 +5,7 @@ import time
 
 # SERVER CONFIGS
 default_host = gethostname()
-default_port = 55565
+default_port = 55562
 distributed_server = socket(AF_INET, SOCK_STREAM)
 distributed_server.connect((default_host, default_port))
 
@@ -42,7 +42,7 @@ def handleGPIOConfig():
     GPIO.setup(devices["SC_IN"], GPIO.IN)
     GPIO.setup(devices["SC_OUT"], GPIO.IN)
 
-def handleInputDevices():
+def handleOutputDevices():
     L_01 =  "ON" if GPIO.input(devices["L_01"]) == 1 else "OF"
     L_02 = "ON" if GPIO.input(devices["L_02"]) == 1 else "OF"
     AC = "ON" if GPIO.input(devices["AC"]) == 1 else "OF"
@@ -50,7 +50,7 @@ def handleInputDevices():
     AL_BZ = "ON" if GPIO.input(devices["AL_BZ"]) == 1 else "OF"
     return 'L01:'  + L_01 + '\n' + 'L_02: '  + L_02 +  '\n' + 'AC: '  + AC + '\n' + 'PR: ' + PR + '\n' + 'AL_BZ: ' + AL_BZ +'\n'
 
-def handleOutputDevices():
+def handleInputDevices():
     SPres =  "ON" if GPIO.input(devices["SPres"]) == 1 else "OF"
     SFum = "ON" if GPIO.input(devices["SFum"]) == 1 else "OF"
     SJan = "ON" if GPIO.input(devices["SJan"]) == 1 else "OF"
@@ -76,26 +76,32 @@ def handleTemperature():
             raise error
         time.sleep(2.0)
 
+def handleUpdateDeviceState(pin_number):
+    print(pin_number, type(pin_number))
+    GPIO.output(pin_number, GPIO.LOW) if GPIO.input(pin_number) == 1 else GPIO.output(pin_number, GPIO.HIGH)
+    return handleOutputDevices()
+   
 def main():
     handleGPIOConfig()
     message_send = ''
     while 1:
         message = distributed_server.recv(1024)
-        print(message.decode(), type(message))
+        print(message.decode())
         message = message.decode()
         message_received = message.split(',')
 
-        if int(message_received[0]) == 1:
-            message_send = handleInputDevices()
-            distributed_server.send(message_send.encode())
-        elif int(message_received[0]) == 2:
-            message_send = handleOutputDevices()
-            distributed_server.send(message_send.encode())
-        elif int(message_received[0]) == 3:
-            message_send = handleTemperature()
-            distributed_server.send(message_send.encode())
-        else:
-            message_send = 'OPÇÃO INVÁLIDA'
+        if int(message_received[0]) == 1:  
+            if int(message_received[1]) == 1:
+                message_send = handleOutputDevices()
+                distributed_server.send(message_send.encode())
+            elif int(message_received[1]) == 2:
+                message_send = handleInputDevices()
+                distributed_server.send(message_send.encode())
+            elif int(message_received[1]) == 3:
+                message_send = handleTemperature()
+                distributed_server.send(message_send.encode())
+        if int(message_received[0]) == 2:
+            message_send = handleUpdateDeviceState(int(message_received[1]))
             distributed_server.send(message_send.encode())
 
 if __name__ == "__main__":

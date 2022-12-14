@@ -24,17 +24,20 @@ while 1:
     print('=================================================')
     commands = ''
     new_message = input('VER DISPOSITIVOS DE ENTRADA (1)\nVER DISPOSITIVOS DE SAÍDA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\n ACIONAR DISPOSITIVOS (4)\n')
-    commands = f'1,{new_message}'
+    # OPCOES DE LEITURA
     if int(new_message) != 4:
+        commands = f'1,{new_message}'
+        distributed_server_connection.send(commands.encode());
+    # OPÇOES DE ESCRITA/MUDANÇA DE STADO
+    if int(new_message) == 4:
+        os.system('clear')
+        print('=================================================')
+        print('======== SELECIONE OS DISPOSITIVOS ==============')
+        print('=================================================')
+        new_message = input('L_01 (18)\nL_02 (23)\nAC (24)\n PR (25)\n')
+        commands = f'2,{new_message}'
         distributed_server_connection.send(commands.encode());
 
-    # if int(new_message) == 4:
-    #     os.system('clear')
-    #     print('=================================================')
-    #     print('======== SELECIONE OS DISPOSITIVOS ==============')
-    #     print('=================================================')
-    #     new_message = input('L_01 (18)\nL_02 (23)\nAC (24)\n PR (25)\n')
-    #     distributed_server_connection.send(new_message.encode());
 
     message_received = distributed_server_connection.recv(1024)
     print(message_received.decode())
