@@ -34,21 +34,83 @@ def handleGPIOConfig():
     GPIO.setup(devices["inputs"][5]["gpio"], GPIO.OUT) # "SC_OUT": 21
 
 def handleOutputDevices():
-    L_01 =  "ON" if GPIO.input(devices["outputs"][0]["gpio"]) == 1 else "OF"
-    L_02 = "ON" if GPIO.input(devices["outputs"][1]["gpio"]) == 1 else "OF"
-    PR = "ON" if GPIO.input(devices["outputs"][2]["gpio"]) == 1 else "OF"
-    AC = "ON" if GPIO.input(devices["outputs"][3]["gpio"]) == 1 else "OF"
-    AL_BZ = "ON" if GPIO.input(devices["outputs"][4]["gpio"]) == 1 else "OF"
-    return '\nLEITURA DE DISPOSITIVOS DE SAÍDA: \n' + 'L01:'  + L_01 + '\n' + 'L_02: '  + L_02 +  '\n' + 'AC: '  + AC + '\n' + 'PR: ' + PR + '\n' + 'AL_BZ: ' + AL_BZ +'\n'
+    res = [
+        {
+            "type": "lampada",
+            "tag": "Lâmpada 01",
+            "gpio": 18,
+            "state": "ON" if GPIO.input(devices["outputs"][0]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "lampada",
+            "tag": "Lâmpada 02",
+            "gpio": 23,
+            "state": "ON" if GPIO.input(devices["outputs"][1]["gpio"]) == 1 else "OF"
+
+        },
+        {
+            "type": "projetor",
+            "tag": "Projetor Multimidia",
+            "gpio": 25,
+            "state":  "ON" if GPIO.input(devices["outputs"][2]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "ar-condicionado",
+            "tag": "Ar-Condicionado (1º Andar)",
+            "gpio": 24,
+            "state": "ON" if GPIO.input(devices["outputs"][3]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "alarme",
+            "tag": "Sirene do Alarme",
+            "gpio": 8,
+            "state": "ON" if GPIO.input(devices["outputs"][4]["gpio"]) == 1 else "OF"
+        }
+    ]
+    res = json.dumps(res)
+    return res
 
 def handleInputDevices():
-    SPres =  "ON" if GPIO.input(devices["inputs"][0]["gpio"]) == 1 else "OF"
-    SFum = "ON" if GPIO.input(devices["inputs"][1]["gpio"]) == 1 else "OF"
-    SJan = "ON" if GPIO.input(devices["inputs"][2]["gpio"]) == 1 else "OF"
-    SPor = "ON" if GPIO.input(devices["inputs"][3]["gpio"]) == 1 else "OF"
-    SC_IN = "ON" if GPIO.input(devices["inputs"][4]["gpio"]) == 1 else "OF"
-    SC_OUT = "ON" if GPIO.input(devices["inputs"][5]["gpio"]) == 1 else "OF"
-    return '\nLEITURA DE DISPOSITIVOS DE ENTRADA: \n' + 'SPres:'  + SPres + '\n' + 'SFum: '  + SFum +  '\n' + 'SJan: '  + SJan + '\n' + 'SPor: ' + SPor + '\n' + 'SC_IN: ' + SC_IN + '\n' + 'SC_OUT: ' + SC_OUT + '\n'
+    res = [
+        {
+          "type": "presenca",
+          "tag": "Sensor de Presença",
+          "gpio": 7,
+          "state": "ON" if GPIO.input(devices["inputs"][0]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "fumaca",
+            "tag": "Sensor de Fumaça",
+            "gpio": 1,
+            "state": "ON" if GPIO.input(devices["inputs"][1]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "janela",
+            "tag": "Sensor de Janela",
+            "gpio": 12,
+            "state": "ON" if GPIO.input(devices["inputs"][2]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "porta",
+            "tag": "Sensor de Porta",
+            "gpio": 16,
+            "state": "ON" if GPIO.input(devices["inputs"][3]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "contagem",
+            "tag": "Sensor de Contagem de Pessoas Entrada",
+            "gpio": 20,
+            "state": "ON" if GPIO.input(devices["inputs"][4]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "contagem",
+            "tag": "Sensor de Contagem de Pessoas Saída",
+            "gpio": 21,
+            "state": "ON" if GPIO.input(devices["inputs"][5]["gpio"]) == 1 else "OF"
+        }
+    ]
+    res = json.dumps(res)
+    return res
 
 def handleTemperature():
     dhtDevice = adafruit_dht.DHT22(devices["sensor_temperatura"][0]["gpio"], GPIO.OUT) # "DHT22": 4

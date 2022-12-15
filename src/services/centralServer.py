@@ -3,6 +3,8 @@ import os
 import threading
 import json
 
+#scp -P 13508 -r centralServer.py victorlucas@164.41.98.16:./FSE_Trabalho01/src/services 
+
 # JSON CONFIGS
 with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
     dados = json.load(meu_json)
@@ -33,8 +35,13 @@ print(f'O Servidor distribuido: {distributed_server_address} se conectou')
 def handleReceivedMessages(distributed_server_connection): 
     # Adicionar verificação se a mensagem é = ""
     # LEVAR THREAD para fora do while
-    message_received = distributed_server_connection.recv(1024)
-    print(message_received.decode())
+    message_received = (distributed_server_connection.recv(1024)).decode()
+    json_received = eval(message_received) 
+
+    for device in json_received:
+        print(f'Dispositivo: {device["tag"]}')
+        print(f'Status: {device["state"]}\n')
+
 
 def main():
     while 1:
