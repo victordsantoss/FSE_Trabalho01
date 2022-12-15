@@ -3,6 +3,11 @@ import RPi.GPIO as GPIO
 import adafruit_dht
 import time
 import threading
+import json
+
+# JSON CONFIGS
+with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
+    devices = json.load(meu_json)
 
 # SERVER CONFIGS
 default_host = gethostname()
@@ -10,58 +15,43 @@ default_port = 55562
 distributed_server = socket(AF_INET, SOCK_STREAM)
 distributed_server.connect((default_host, default_port))
 
-devices = {
-    "L_01": 18, # LAMPADA 01 DA SALA ----- SAIDA
-    "L_02": 23, # LAMPADA 02 DA SAL ----- SAIDA
-    "AC": 24, # AR-CONDICIONADO ----- SAIDA
-    "PR": 25, # PROJETO MULTIMÍDIA ----- SAIDA
-    "AL_BZ": 8, # ALARME (BUZZER) ----- SAIDA
-    "SPres": 7, # SENSOR DE PRESENÇA ----- ENTRADA
-    "SFum": 1, # SENSOR DE FUMAÇA ----- ENTRADA
-    "SJan": 12, # SENSOR DE JANELA T01 ----- ENTRADA
-    "SPor": 16, # SENSOR DE JANELA T02 ----- ENTRADA
-    "SC_IN": 20, # SENSOR DE CONTAGEM DE PESSOAS ENTRADA ----- ENTRADA
-    "SC_OUT": 21, # SENSOR DE CONTAGEM DE PESSOAS SAÍDA ----- ENTRADA
-    "DHT22": 4, # SENSOR DE TEMPERATURA / UMIDADE HT22 ----- 1-WIRE
-}
-
 # GPIO CONFIGS
 def handleGPIOConfig():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     # DISPOSITIVOS DE SAÍDA
-    GPIO.setup(devices["L_01"], GPIO.OUT)
-    GPIO.setup(devices["L_02"], GPIO.OUT)
-    GPIO.setup(devices["AC"], GPIO.OUT)
-    GPIO.setup(devices["PR"], GPIO.OUT)
-    GPIO.setup(devices["AL_BZ"], GPIO.OUT)
+    GPIO.setup(devices["outputs"][0]["gpio"], GPIO.OUT) # "L_01": 18
+    GPIO.setup(devices["outputs"][1]["gpio"], GPIO.OUT) # "L_02": 23
+    GPIO.setup(devices["outputs"][2]["gpio"], GPIO.OUT) # "PR": 25
+    GPIO.setup(devices["outputs"][3]["gpio"], GPIO.OUT) # "AC": 24
+    GPIO.setup(devices["outputs"][4]["gpio"], GPIO.OUT) # "AL_BZ": 8
     # DISPOSITIVOS DE ENTRADA
-    GPIO.setup(devices["SPres"], GPIO.IN)
-    GPIO.setup(devices["SFum"], GPIO.IN)
-    GPIO.setup(devices["SJan"], GPIO.IN)
-    GPIO.setup(devices["SPor"], GPIO.IN)
-    GPIO.setup(devices["SC_IN"], GPIO.IN)
-    GPIO.setup(devices["SC_OUT"], GPIO.IN)
+    GPIO.setup(devices["inputs"][0]["gpio"], GPIO.OUT) # "SPres": 7
+    GPIO.setup(devices["inputs"][1]["gpio"], GPIO.OUT) # "SFum": 1
+    GPIO.setup(devices["inputs"][2]["gpio"], GPIO.OUT) # "SJan": 12
+    GPIO.setup(devices["inputs"][3]["gpio"], GPIO.OUT) # "SPor": 16
+    GPIO.setup(devices["inputs"][4]["gpio"], GPIO.OUT) # "SC_IN": 20
+    GPIO.setup(devices["inputs"][5]["gpio"], GPIO.OUT) # "SC_OUT": 21
 
 def handleOutputDevices():
-    L_01 =  "ON" if GPIO.input(devices["L_01"]) == 1 else "OF"
-    L_02 = "ON" if GPIO.input(devices["L_02"]) == 1 else "OF"
-    AC = "ON" if GPIO.input(devices["AC"]) == 1 else "OF"
-    PR = "ON" if GPIO.input(devices["PR"]) == 1 else "OF"
-    AL_BZ = "ON" if GPIO.input(devices["AL_BZ"]) == 1 else "OF"
+    L_01 =  "ON" if GPIO.input(devices["outputs"][0]["gpio"]) == 1 else "OF"
+    L_02 = "ON" if GPIO.input(devices["outputs"][1]["gpio"]) == 1 else "OF"
+    PR = "ON" if GPIO.input(devices["outputs"][2]["gpio"]) == 1 else "OF"
+    AC = "ON" if GPIO.input(devices["outputs"][3]["gpio"]) == 1 else "OF"
+    AL_BZ = "ON" if GPIO.input(devices["outputs"][4]["gpio"]) == 1 else "OF"
     return '\nLEITURA DE DISPOSITIVOS DE SAÍDA: \n' + 'L01:'  + L_01 + '\n' + 'L_02: '  + L_02 +  '\n' + 'AC: '  + AC + '\n' + 'PR: ' + PR + '\n' + 'AL_BZ: ' + AL_BZ +'\n'
 
 def handleInputDevices():
-    SPres =  "ON" if GPIO.input(devices["SPres"]) == 1 else "OF"
-    SFum = "ON" if GPIO.input(devices["SFum"]) == 1 else "OF"
-    SJan = "ON" if GPIO.input(devices["SJan"]) == 1 else "OF"
-    SPor = "ON" if GPIO.input(devices["SPor"]) == 1 else "OF"
-    SC_IN = "ON" if GPIO.input(devices["SC_IN"]) == 1 else "OF"
-    SC_OUT = "ON" if GPIO.input(devices["SC_OUT"]) == 1 else "OF"
+    SPres =  "ON" if GPIO.input(devices["inputs"][0]["gpio"]) == 1 else "OF"
+    SFum = "ON" if GPIO.input(devices["inputs"][1]["gpio"]) == 1 else "OF"
+    SJan = "ON" if GPIO.input(devices["inputs"][2]["gpio"]) == 1 else "OF"
+    SPor = "ON" if GPIO.input(devices["inputs"][3]["gpio"]) == 1 else "OF"
+    SC_IN = "ON" if GPIO.input(devices["inputs"][4]["gpio"]) == 1 else "OF"
+    SC_OUT = "ON" if GPIO.input(devices["inputs"][5]["gpio"]) == 1 else "OF"
     return '\nLEITURA DE DISPOSITIVOS DE ENTRADA: \n' + 'SPres:'  + SPres + '\n' + 'SFum: '  + SFum +  '\n' + 'SJan: '  + SJan + '\n' + 'SPor: ' + SPor + '\n' + 'SC_IN: ' + SC_IN + '\n' + 'SC_OUT: ' + SC_OUT + '\n'
 
 def handleTemperature():
-    dhtDevice = adafruit_dht.DHT22(devices["DHT22"])
+    dhtDevice = adafruit_dht.DHT22(devices["sensor_temperatura"][0]["gpio"], GPIO.OUT) # "DHT22": 4
     while True:
         try:
             temperature_c = dhtDevice.temperature
@@ -81,9 +71,8 @@ def handleTemperature():
 def handleUpdateDeviceState(pin_number):
     print(pin_number, type(pin_number))
     GPIO.output(pin_number, GPIO.LOW) if GPIO.input(pin_number) == 1 else GPIO.output(pin_number, GPIO.HIGH)
-    res = handleOutputDevices()
-    return res
-   
+    return handleOutputDevices()
+     
 def handleSendMessages(message_send):
     distributed_server.send(message_send.encode())
 

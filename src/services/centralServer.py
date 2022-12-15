@@ -1,6 +1,15 @@
 from socket import *
 import os
 import threading
+import json
+
+# JSON CONFIGS
+with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
+    dados = json.load(meu_json)
+
+# default_host = dados['ip_servidor_central']
+# default_port = dados['porta_servidor_central'] 
+# default_message = ''
 
 default_host = gethostname()
 default_port = 55562 
@@ -16,10 +25,14 @@ central_server.bind((central_server_host, central_server_port))
 central_server.listen(5)
 print(f'Servidor Central conectado no HOST:  {central_server_host} e PORTA: {central_server_port}')
 
+
+
 distributed_server_connection, distributed_server_address = central_server.accept()
 print(f'O Servidor distribuido: {distributed_server_address} se conectou')
 
 def handleReceivedMessages(distributed_server_connection): 
+    # Adicionar verificação se a mensagem é = ""
+    # LEVAR THREAD para fora do while
     message_received = distributed_server_connection.recv(1024)
     print(message_received.decode())
 
