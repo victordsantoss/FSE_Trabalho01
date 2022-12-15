@@ -8,7 +8,7 @@ import datetime
 count = 0
 # JSON CONFIGS
 with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
-    dados = json.load(meu_json)
+    devices = json.load(meu_json)
 
 # default_host = dados['ip_servidor_central']
 # default_port = dados['porta_servidor_central'] 
@@ -30,10 +30,12 @@ print(f'O Servidor distribuido: {distributed_server_address} se conectou')
 
 def handleReceivedMessages(distributed_server_connection): 
     message_received = (distributed_server_connection.recv(1024)).decode()
+    print("====================", message_received)
     json_received = eval(message_received) 
     for device in json_received:
         print(f'Dispositivo: {device["tag"]}')
-        print(f'Status: {device["state"]}\n')
+        print(f'Status: {device["state"]}')
+        print(f'-----------------------------')
 
 def handleCommandsSave(command):
     instruction = ''
@@ -60,7 +62,7 @@ def main():
         print('============= FSE - TRABALHO 01 =================')
         print('=================================================')
         commands = ''
-        new_message = input('VER DISPOSITIVOS DE ENTRADA (1)\nVER DISPOSITIVOS DE SAÍDA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\nACIONAR DISPOSITIVOS (4)\nVISUALIZAR COMANDOS (5)\n')
+        new_message = input('VER DISPOSITIVOS DE ENTRADA (1)\nVER DISPOSITIVOS DE SAÍDA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\nACIONAR DISPOSITIVOS DE ENTRADA(4)\nACIONAR DISPOSITIVOS DE SAÍDA(5)\nVISUALIZAR COMANDOS (6)\n')
         # OPCOES DE LEITURA
         if int(new_message) >= 1 and int(new_message) < 4:
             commands = f'1,{new_message}'
@@ -68,10 +70,22 @@ def main():
         if int(new_message) == 4:
             os.system('clear')
             print('=================================================')
-            print('======== SELECIONE OS DISPOSITIVOS ==============')
+            print('================ DISPOSITIVOS ===================')
             print('=================================================')
-            new_message = input('L_01 (18)\nL_02 (23)\nAC (24)\nPR (25)\n')
-            commands = f'2,{new_message}'
+            for x in devices["outputs"]:
+                print(f'Dispositivo: {x["tag"]} | ID de seleção: {x["gpio"]}')
+            new_message = input('Selecione o dispositivo (DIGITE O ID DE SELEÇÃO): ')
+            commands = f'2,{new_message}, outputs'
+
+        if int(new_message) == 5:
+            os.system('clear')
+            print('=================================================')
+            print('================ DISPOSITIVOS ===================')
+            print('=================================================')
+            for x in devices["inputs"]:
+                print(f'Dispositivo: {x["tag"]} | ID de seleção: {x["gpio"]}')
+            new_message = input('Selecione o dispositivo (DIGITE O ID DE SELEÇÃO): ')
+            commands = f'2,{new_message},inputs'
 
         primary_command = new_message.split(',')
         distributed_server_connection.send(commands.encode())
@@ -79,7 +93,7 @@ def main():
         thread = threading.Thread(target=handleReceivedMessages, args=(distributed_server_connection,))
         thread.start()
 
-        if(int(primary_command[0]) == 5):
+        if(int(primary_command[0]) == 6):
             handleReadCsvCommands()
 
         clear_page = int(input('LIMPAR TELA (1)\n'))

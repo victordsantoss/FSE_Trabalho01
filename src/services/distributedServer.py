@@ -1,4 +1,6 @@
 from socket import *
+
+from markupsafe import string
 import RPi.GPIO as GPIO
 import adafruit_dht
 import time
@@ -130,17 +132,26 @@ def handleTemperature():
             raise error
         time.sleep(2.0)
 
-def handleUpdateDeviceState(pin_number):
-    print(pin_number, type(pin_number))
+def handleUpdateDeviceState(pin_number, device_type):
     GPIO.output(pin_number, GPIO.LOW) if GPIO.input(pin_number) == 1 else GPIO.output(pin_number, GPIO.HIGH)
-    return handleOutputDevices()
-     
+    print(pin_number, device_type, type(device_type), device_type == 'outputs', device_type == ' outputs', GPIO.input(pin_number))
+    current_state = "ON" if GPIO.input(pin_number) == 1 else "OF"
+    res = [
+        {
+            "type": "pin_number",
+            "tag": "Lâmpada 01",
+            "gpio": 18,
+            "state": current_state
+        }
+    ]
+    res = json.dumps(res)
+    return res
+
 def handleSendMessages(message_send):
     distributed_server.send(message_send.encode())
 
 def main():
     handleGPIOConfig()
-    message_send = ''
     while 1:
         message = distributed_server.recv(1024)
         print(message.decode())
@@ -155,8 +166,7 @@ def main():
             elif int(message_received[1]) == 3:
                 message_send = handleTemperature()
         if int(message_received[0]) == 2:
-            message_send = handleUpdateDeviceState(int(message_received[1]))
-            distributed_server.send(message_send.encode())
+            message_send = handleUpdateDeviceState(int(message_received[1]), message_received[2])
         send_thread = threading.Thread(target=handleSendMessages, args=(message_send, ))
         send_thread.start()
 
