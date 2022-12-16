@@ -169,12 +169,11 @@ def main():
                 message_send = handleInputDevices()
                 threading.Thread(target=handleSendMessages, args=(message_send, )).start()
             elif int(message_received[1]) == 3:
-                while 1: 
                     message_send = handleTemperature()
                     # threading.Thread(target=handleSendMessages, args=(message_send, )).start()
                     if message_send is not None:
                         distributed_server.sendall(message_send.encode())
-                        time.sleep(2.0)
+                  
         if int(message_received[0]) == 2:
             message_send = handleUpdateDeviceState(int(message_received[1]), message_received[2])
             threading.Thread(target=handleSendMessages, args=(message_send, )).start()

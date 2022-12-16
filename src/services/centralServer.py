@@ -4,6 +4,7 @@ import threading
 import json
 import csv
 import datetime
+import time
 
 # JSON CONFIGS
 with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
@@ -28,13 +29,12 @@ distributed_server_connection, distributed_server_address = central_server.accep
 print(f'O Servidor distribuido: {distributed_server_address} se conectou')
 
 
-def handleReceivedTemperature(distributed_server_connection): 
-    while 1:
-        try:
-            message_received = (distributed_server_connection.recv(1024)).decode()
-            print(message_received)
-        except KeyboardInterrupt:
-            continue
+def handleReceivedTemperature(distributed_server_connection):
+    try:
+        message_received = (distributed_server_connection.recv(1024)).decode()
+        print(message_received)
+    except:
+        print("ERRO NA LEITURA")
 
 def handleReceivedMessages(distributed_server_connection): 
     message_received = (distributed_server_connection.recv(1024)).decode()
@@ -95,11 +95,18 @@ def main():
             commands = f'2,{new_message},inputs'
 
         primary_command = new_message.split(',')
-        distributed_server_connection.send(commands.encode())
+       
         handleCommandsSave(primary_command[0])
         if int(new_message) == 3:
-            threading.Thread(target=handleReceivedTemperature, args=(distributed_server_connection,)).start()
+            while 1:
+                try:
+                    distributed_server_connection.send(commands.encode())
+                    threading.Thread(target=handleReceivedTemperature, args=(distributed_server_connection,)).start()
+                    time.sleep(2.0)
+                except KeyboardInterrupt:
+                    break
         else:
+            distributed_server_connection.send(commands.encode())
             threading.Thread(target=handleReceivedMessages, args=(distributed_server_connection,)).start()
         
         if(int(primary_command[0]) == 6):
