@@ -30,12 +30,12 @@ print(f'O Servidor distribuido: {distributed_server_address} se conectou')
 
 def handleReceivedMessages(distributed_server_connection): 
     message_received = (distributed_server_connection.recv(1024)).decode()
-    print("====================", message_received)
-    json_received = eval(message_received) 
-    for device in json_received:
-        print(f'Dispositivo: {device["tag"]}')
-        print(f'Status: {device["state"]}')
-        print(f'-----------------------------')
+    if message_received != "":
+        json_received = eval(message_received) 
+        for device in json_received:
+            print(f'Dispositivo: {device["tag"]}')
+            print(f'Status: {device["state"]}')
+            print(f'-----------------------------')
 
 def handleCommandsSave(command):
     instruction = ''

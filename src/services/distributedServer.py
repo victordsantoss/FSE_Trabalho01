@@ -6,6 +6,7 @@ import adafruit_dht
 import time
 import threading
 import json
+import board
 
 # JSON CONFIGS
 with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
@@ -115,16 +116,15 @@ def handleInputDevices():
     return res
 
 def handleTemperature():
-    dhtDevice = adafruit_dht.DHT22(devices["sensor_temperatura"][0]["gpio"], GPIO.OUT) # "DHT22": 4
+    dhtDevice = adafruit_dht.DHT22(board.D4, use_pulseio=False) # "DHT22": 4
     while True:
         try:
             temperature_c = dhtDevice.temperature
             temperature_f = temperature_c * (9 / 5) + 32
             humidity = dhtDevice.humidity
             print("Temp: {:.1f} F / {:.1f} C    Humidity: {}% ".format(temperature_f, temperature_c, humidity))
-            return "Temp: {:.1f} F / {:.1f} C    Humidity: {}% ".format(temperature_f, temperature_c, humidity)
         except RuntimeError as error:
-            print(error.args[0])
+            handleTemperature()
             time.sleep(2.0)
             continue
         except Exception as error:
@@ -134,13 +134,17 @@ def handleTemperature():
 
 def handleUpdateDeviceState(pin_number, device_type):
     GPIO.output(pin_number, GPIO.LOW) if GPIO.input(pin_number) == 1 else GPIO.output(pin_number, GPIO.HIGH)
-    print(pin_number, device_type, type(device_type), device_type == 'outputs', device_type == ' outputs', GPIO.input(pin_number))
     current_state = "ON" if GPIO.input(pin_number) == 1 else "OF"
+    tag = ''
+    device_type = device_type.strip()
+    for d in devices[device_type]:
+        if d["gpio"] == pin_number:
+            tag = d["tag"]
+
     res = [
         {
-            "type": "pin_number",
-            "tag": "Lâmpada 01",
-            "gpio": 18,
+            "tag": tag,
+            "gpio": pin_number,
             "state": current_state
         }
     ]
