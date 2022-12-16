@@ -5,7 +5,6 @@ import json
 import csv
 import datetime
 
-count = 0
 # JSON CONFIGS
 with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
     devices = json.load(meu_json)
@@ -39,13 +38,11 @@ def handleReceivedMessages(distributed_server_connection):
 
 def handleCommandsSave(command):
     instruction = ''
-    global count
-    count += 1
     if (int(command[0]) == 1): instruction = 'VER DISPOSITIVOS DE ENTRADA'
     if (int(command[0]) == 2): instruction = 'VER DISPOSITIVOS DE SAÍDA'
     if (int(command[0]) == 3): instruction = 'VER VALORES DE TEMPERATURA E HUMIDADE'
     if (int(command[0]) == 4): instruction = 'ACIONAR DISPOSITIVOS'
-    commands_data = [count, instruction, datetime.datetime.now()]
+    commands_data = [instruction, datetime.datetime.now()]
     with open('commands.csv', 'a') as f:
         writer = csv.writer(f)
         writer.writerow(commands_data)
