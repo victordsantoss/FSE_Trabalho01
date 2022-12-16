@@ -10,11 +10,8 @@ import time
 with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
     devices = json.load(meu_json)
 
-# default_host = dados['ip_servidor_central']
-# default_port = dados['porta_servidor_central'] 
-
-default_host = gethostname()
-default_port = 55562 
+default_host = devices['ip_servidor_central']
+default_port = devices['porta_servidor_central'] 
 default_message = ''
 
 central_server_host = default_host
@@ -28,6 +25,10 @@ print(f'Servidor Central conectado no HOST:  {central_server_host} e PORTA: {cen
 distributed_server_connection, distributed_server_address = central_server.accept()
 print(f'O Servidor distribuido: {distributed_server_address} se conectou')
 
+def initialMenu(string):
+    print('=================================================')
+    print(f'============= {string} =================')
+    print('=================================================')
 
 def handleReceivedTemperature(distributed_server_connection):
     try:
@@ -44,7 +45,6 @@ def handleReceivedMessages(distributed_server_connection):
             print(f'Dispositivo: {device["tag"]}')
             print(f'Status: {device["state"]}')
             print(f'-----------------------------')
-
         
 def handleCommandsSave(command):
     instruction = ''
@@ -65,37 +65,23 @@ def handleReadCsvCommands():
 
 def main():
     while 1:
-        print('=================================================')
-        print('============= FSE - TRABALHO 01 =================')
-        print('=================================================')
+        initialMenu('FSE - TRABALHO 01')
         commands = ''
         new_message = input('VER DISPOSITIVOS DE ENTRADA (1)\nVER DISPOSITIVOS DE SAÍDA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\nACIONAR DISPOSITIVOS DE ENTRADA(4)\nACIONAR DISPOSITIVOS DE SAÍDA(5)\nVISUALIZAR COMANDOS (6)\n')
         # OPCOES DE LEITURA
         if int(new_message) >= 1 and int(new_message) < 4:
             commands = f'1,{new_message}'
         # OPÇOES DE ESCRITA/MUDANÇA DE STADO
-        if int(new_message) == 4:
+        if int(new_message) == 4 or int(new_message) == 5:
             os.system('clear')
-            print('=================================================')
-            print('================ DISPOSITIVOS ===================')
-            print('=================================================')
-            for x in devices["outputs"]:
+            initialMenu('DISPOSITIVOS')
+            device_type = "outputs" if int(new_message) == 4 else "inputs"
+            for x in devices[device_type]:
                 print(f'Dispositivo: {x["tag"]} | ID de seleção: {x["gpio"]}')
             new_message = input('Selecione o dispositivo (DIGITE O ID DE SELEÇÃO): ')
-            commands = f'2,{new_message}, outputs'
-
-        if int(new_message) == 5:
-            os.system('clear')
-            print('=================================================')
-            print('================ DISPOSITIVOS ===================')
-            print('=================================================')
-            for x in devices["inputs"]:
-                print(f'Dispositivo: {x["tag"]} | ID de seleção: {x["gpio"]}')
-            new_message = input('Selecione o dispositivo (DIGITE O ID DE SELEÇÃO): ')
-            commands = f'2,{new_message},inputs'
+            commands = f'2,{new_message}, {device_type}'
 
         primary_command = new_message.split(',')
-       
         handleCommandsSave(primary_command[0])
         if int(new_message) == 3:
             while 1:
@@ -109,7 +95,7 @@ def main():
             distributed_server_connection.send(commands.encode())
             threading.Thread(target=handleReceivedMessages, args=(distributed_server_connection,)).start()
         
-        if(int(primary_command[0]) == 6):
+        if int(primary_command[0]) == 6:
             handleReadCsvCommands()
 
         clear_page = int(input('LIMPAR TELA (8)\n'))

@@ -13,8 +13,8 @@ with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
     devices = json.load(meu_json)
 
 # SERVER CONFIGS
-default_host = gethostname()
-default_port = 55562
+default_host = devices['ip_servidor_central']
+default_port = devices['porta_servidor_central'] 
 distributed_server = socket(AF_INET, SOCK_STREAM)
 distributed_server.connect((default_host, default_port))
 
@@ -23,18 +23,18 @@ def handleGPIOConfig():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     # DISPOSITIVOS DE SAÍDA
-    GPIO.setup(devices["outputs"][0]["gpio"], GPIO.OUT) # "L_01": 18
-    GPIO.setup(devices["outputs"][1]["gpio"], GPIO.OUT) # "L_02": 23
-    GPIO.setup(devices["outputs"][2]["gpio"], GPIO.OUT) # "PR": 25
-    GPIO.setup(devices["outputs"][3]["gpio"], GPIO.OUT) # "AC": 24
-    GPIO.setup(devices["outputs"][4]["gpio"], GPIO.OUT) # "AL_BZ": 8
+    GPIO.setup(devices["outputs"][0]["gpio"], GPIO.OUT)  
+    GPIO.setup(devices["outputs"][1]["gpio"], GPIO.OUT)
+    GPIO.setup(devices["outputs"][2]["gpio"], GPIO.OUT)  
+    GPIO.setup(devices["outputs"][3]["gpio"], GPIO.OUT)  
+    GPIO.setup(devices["outputs"][4]["gpio"], GPIO.OUT) 
     # DISPOSITIVOS DE ENTRADA
-    GPIO.setup(devices["inputs"][0]["gpio"], GPIO.OUT) # "SPres": 7
-    GPIO.setup(devices["inputs"][1]["gpio"], GPIO.OUT) # "SFum": 1
-    GPIO.setup(devices["inputs"][2]["gpio"], GPIO.OUT) # "SJan": 12
-    GPIO.setup(devices["inputs"][3]["gpio"], GPIO.OUT) # "SPor": 16
-    GPIO.setup(devices["inputs"][4]["gpio"], GPIO.OUT) # "SC_IN": 20
-    GPIO.setup(devices["inputs"][5]["gpio"], GPIO.OUT) # "SC_OUT": 21
+    GPIO.setup(devices["inputs"][0]["gpio"], GPIO.OUT) 
+    GPIO.setup(devices["inputs"][1]["gpio"], GPIO.OUT) 
+    GPIO.setup(devices["inputs"][2]["gpio"], GPIO.OUT)
+    GPIO.setup(devices["inputs"][3]["gpio"], GPIO.OUT) 
+    GPIO.setup(devices["inputs"][4]["gpio"], GPIO.OUT) 
+    GPIO.setup(devices["inputs"][5]["gpio"], GPIO.OUT) 
 
 def handleOutputDevices():
     res = [
@@ -170,7 +170,6 @@ def main():
                 threading.Thread(target=handleSendMessages, args=(message_send, )).start()
             elif int(message_received[1]) == 3:
                     message_send = handleTemperature()
-                    # threading.Thread(target=handleSendMessages, args=(message_send, )).start()
                     if message_send is not None:
                         distributed_server.sendall(message_send.encode())
                   
