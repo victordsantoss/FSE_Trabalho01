@@ -27,6 +27,15 @@ print(f'Servidor Central conectado no HOST:  {central_server_host} e PORTA: {cen
 distributed_server_connection, distributed_server_address = central_server.accept()
 print(f'O Servidor distribuido: {distributed_server_address} se conectou')
 
+
+def handleReceivedTemperature(distributed_server_connection): 
+    while 1:
+        try:
+            message_received = (distributed_server_connection.recv(1024)).decode()
+            print(message_received)
+        except KeyboardInterrupt:
+            continue
+
 def handleReceivedMessages(distributed_server_connection): 
     message_received = (distributed_server_connection.recv(1024)).decode()
     if message_received != "":
@@ -36,6 +45,7 @@ def handleReceivedMessages(distributed_server_connection):
             print(f'Status: {device["state"]}')
             print(f'-----------------------------')
 
+        
 def handleCommandsSave(command):
     instruction = ''
     if (int(command[0]) == 1): instruction = 'VER DISPOSITIVOS DE ENTRADA'
@@ -87,16 +97,18 @@ def main():
         primary_command = new_message.split(',')
         distributed_server_connection.send(commands.encode())
         handleCommandsSave(primary_command[0])
-        thread = threading.Thread(target=handleReceivedMessages, args=(distributed_server_connection,))
-        thread.start()
-
+        if int(new_message) == 3:
+            threading.Thread(target=handleReceivedTemperature, args=(distributed_server_connection,)).start()
+        else:
+            threading.Thread(target=handleReceivedMessages, args=(distributed_server_connection,)).start()
+        
         if(int(primary_command[0]) == 6):
             handleReadCsvCommands()
 
-        clear_page = int(input('LIMPAR TELA (1)\n'))
-        if clear_page == 1:
+        clear_page = int(input('LIMPAR TELA (8)\n'))
+        if clear_page == 8:
             os.system('clear')
-
+    
     distributed_server_connection.close()
 
 if __name__ == "__main__":

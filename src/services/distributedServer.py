@@ -117,20 +117,19 @@ def handleInputDevices():
 
 def handleTemperature():
     dhtDevice = adafruit_dht.DHT22(board.D4, use_pulseio=False) # "DHT22": 4
-    while True:
-        try:
-            temperature_c = dhtDevice.temperature
-            temperature_f = temperature_c * (9 / 5) + 32
-            humidity = dhtDevice.humidity
-            print("Temp: {:.1f} F / {:.1f} C    Humidity: {}% ".format(temperature_f, temperature_c, humidity))
-        except RuntimeError as error:
-            handleTemperature()
-            time.sleep(2.0)
-            continue
-        except Exception as error:
-            dhtDevice.exit()
-            raise error
-        time.sleep(2.0)
+    try:
+        temperature_c = dhtDevice.temperature
+        temperature_f = temperature_c * (9 / 5) + 32
+        humidity = dhtDevice.humidity
+        print("Temp: {:.1f} F / {:.1f} C    Humidity: {}% ".format(temperature_f, temperature_c, humidity))
+        if(temperature_c):
+            return "Temp: {:.1f} F / {:.1f} C    Humidity: {}% ".format(temperature_f, temperature_c, humidity)
+        else:
+            return 'ERRO NA LEITURA'
+    except RuntimeError as error:
+        return 'ERRO NA LEITURA'
+    except Exception as error:
+        return 'ERRO NA LEITURA'
 
 def handleUpdateDeviceState(pin_number, device_type):
     GPIO.output(pin_number, GPIO.LOW) if GPIO.input(pin_number) == 1 else GPIO.output(pin_number, GPIO.HIGH)
@@ -152,7 +151,7 @@ def handleUpdateDeviceState(pin_number, device_type):
     return res
 
 def handleSendMessages(message_send):
-    distributed_server.send(message_send.encode())
+    distributed_server.sendall(message_send.encode())
 
 def main():
     handleGPIOConfig()
@@ -165,14 +164,20 @@ def main():
         if int(message_received[0]) == 1:  
             if int(message_received[1]) == 1:
                 message_send = handleOutputDevices()
+                threading.Thread(target=handleSendMessages, args=(message_send, )).start()
             elif int(message_received[1]) == 2:
                 message_send = handleInputDevices()
+                threading.Thread(target=handleSendMessages, args=(message_send, )).start()
             elif int(message_received[1]) == 3:
-                message_send = handleTemperature()
+                while 1: 
+                    message_send = handleTemperature()
+                    # threading.Thread(target=handleSendMessages, args=(message_send, )).start()
+                    if message_send is not None:
+                        distributed_server.sendall(message_send.encode())
+                        time.sleep(2.0)
         if int(message_received[0]) == 2:
             message_send = handleUpdateDeviceState(int(message_received[1]), message_received[2])
-        send_thread = threading.Thread(target=handleSendMessages, args=(message_send, ))
-        send_thread.start()
+            threading.Thread(target=handleSendMessages, args=(message_send, )).start()
 
 if __name__ == "__main__":
     main()
