@@ -67,7 +67,7 @@ def main():
     while 1:
         initialMenu('FSE - TRABALHO 01')
         commands = ''
-        new_message = input('VER DISPOSITIVOS DE ENTRADA (1)\nVER DISPOSITIVOS DE SAÍDA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\nACIONAR DISPOSITIVOS DE ENTRADA(4)\nACIONAR DISPOSITIVOS DE SAÍDA(5)\nVISUALIZAR COMANDOS (6)\n')
+        new_message = input('VER DISPOSITIVOS DE ENTRADA (1)\nVER DISPOSITIVOS DE SAÍDA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\nACIONAR/DESATIVAR DISPOSITIVOS DE ENTRADA INDIVIDUALMENTE(4)\nACIONAR/DESATIVAR DISPOSITIVOS DE SAÍDA INDIVIDUALMENTE(5)\nACIONAR/DESATIVAR TODOS DISPOSITIVOS DE SAÍDA(6)\nVISUALIZAR COMANDOS (7)\n')
         # OPCOES DE LEITURA
         if int(new_message) >= 1 and int(new_message) < 4:
             commands = f'1,{new_message}'
@@ -80,6 +80,14 @@ def main():
                 print(f'Dispositivo: {x["tag"]} | ID de seleção: {x["gpio"]}')
             new_message = input('Selecione o dispositivo (DIGITE O ID DE SELEÇÃO): ')
             commands = f'2,{new_message}, {device_type}'
+
+        if int(new_message) == 6:
+            os.system('clear')
+            initialMenu('DISPOSITIVOS')
+            new_message = input('ACIONAR TODOS OS DISPOSITIVOS (1)\nDESATIVAR TODOS OS DISPOSITIVOS (2)\n')
+            commands = f'3,{new_message}'
+            print('commands', commands)
+
 
         primary_command = new_message.split(',')
         handleCommandsSave(primary_command[0])
@@ -95,7 +103,7 @@ def main():
             distributed_server_connection.send(commands.encode())
             threading.Thread(target=handleReceivedMessages, args=(distributed_server_connection,)).start()
         
-        if int(primary_command[0]) == 6:
+        if int(primary_command[0]) == 7:
             handleReadCsvCommands()
 
         clear_page = int(input('LIMPAR TELA (8)\n'))

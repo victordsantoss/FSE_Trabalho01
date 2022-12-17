@@ -1,4 +1,4 @@
-from socket import *
+ from socket import *
 
 from markupsafe import string
 import RPi.GPIO as GPIO
@@ -35,6 +35,7 @@ def handleGPIOConfig():
     GPIO.setup(devices["inputs"][3]["gpio"], GPIO.OUT) 
     GPIO.setup(devices["inputs"][4]["gpio"], GPIO.OUT) 
     GPIO.setup(devices["inputs"][5]["gpio"], GPIO.OUT) 
+
 
 def handleOutputDevices():
     res = [
@@ -150,6 +151,20 @@ def handleUpdateDeviceState(pin_number, device_type):
     res = json.dumps(res)
     return res
 
+def handleUpdateAllDevices(type):
+    for x in devices['outputs']:
+        print(f'Dispositivo: {x["tag"]} | ID de seleção: {x["gpio"]}')
+        if GPIO.input(x["gpio"]) == 0 and type == 1:
+            print(f'Dispositivo: {x["tag"]} | ESTÁ LIGADO')
+            GPIO.output(x["gpio"], GPIO.HIGH) 
+        if GPIO.input(x["gpio"]) == 1 and type == 2:
+            print(f'Dispositivo: {x["tag"]} | ESTÁ LIGADO')
+            GPIO.output(x["gpio"], GPIO.LOW) 
+        print(GPIO.input(x["gpio"]))
+        time.sleep(2.0)
+
+    return handleOutputDevices()
+
 def handleSendMessages(message_send):
     distributed_server.sendall(message_send.encode())
 
@@ -176,6 +191,29 @@ def main():
         if int(message_received[0]) == 2:
             message_send = handleUpdateDeviceState(int(message_received[1]), message_received[2])
             threading.Thread(target=handleSendMessages, args=(message_send, )).start()
+
+        if int(message_received[0]) == 3:
+            if int(message_received[1]) == 1:
+                print('deve ativar todos os dispositivos')
+                message_send = handleUpdateAllDevices(1)
+                threading.Thread(target=handleSendMessages, args=(message_send, )).start()
+            if int(message_received[1]) == 2:
+                print('deve desativar todos os dispositivos')
+                message_send = handleUpdateAllDevices(2)
+                threading.Thread(target=handleSendMessages, args=(message_send, )).start()
+
+
+# def handleAlarms():
+#     GPIO.setup(devices["inputs"][1]["gpio"], GPIO.OUT) 
+#     while 1:
+#         state = "ON" if GPIO.input(devices["inputs"][1]["gpio"]) == 1 else "OF"
+#         print("state", state, GPIO.input(devices["inputs"][1]["gpio"]))
+#         if state == "ON":
+#             print("TÁ ONLINE PORRA")
+#             distributed_server.sendall(state.encode())
+#         time.sleep(2.0)
+
+# threading.Thread(target=handleAlarms).start()
 
 if __name__ == "__main__":
     main()
