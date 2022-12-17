@@ -45,13 +45,29 @@ def handleReceivedMessages(distributed_server_connection):
             print(f'Dispositivo: {device["tag"]}')
             print(f'Status: {device["state"]}')
             print(f'-----------------------------')
-        
-def handleCommandsSave(command):
+
+def handleGetCurrentDevice(type, pin_number):
+    device = ""
+    for d in devices[type.strip()]:
+        if d["gpio"] == pin_number:
+            device = d["tag"]
+    return device
+
+def handleCommandsSave(commands):
     instruction = ''
-    if (int(command[0]) == 1): instruction = 'VER DISPOSITIVOS DE ENTRADA'
-    if (int(command[0]) == 2): instruction = 'VER DISPOSITIVOS DE SAÍDA'
-    if (int(command[0]) == 3): instruction = 'VER VALORES DE TEMPERATURA E HUMIDADE'
-    if (int(command[0]) == 4): instruction = 'ACIONAR DISPOSITIVOS'
+    commands = commands.split(',')
+    if (int(commands[0]) == 1):
+        if (int(commands[1]) == 1): instruction = 'VER DISPOSITIVOS DE SAÍDA'
+        if (int(commands[1]) == 2): instruction = 'VER DISPOSITIVOS DE ENTRADA'
+        if (int(commands[1]) == 3): instruction = 'VER VALORES DE TEMPERATURA E HUMIDADE'
+    if (int(commands[0]) == 2):
+        instruction = f'ACIONAMENTO/DESATIVAMENTO DO DISPOSITIVO {handleGetCurrentDevice(commands[2], int(commands[1]))}'
+    if (int(commands[0]) == 3): 
+        if (int(commands[1]) == 1): 
+            instruction = 'ACIONAMENTO TODOS DISPOSITIVOS DE SAÍDA'
+        if (int(commands[1]) == 2): 
+            instruction = 'DESATIVAMENTO TODOS DISPOSITIVOS DE SAÍDA'
+
     commands_data = [instruction, datetime.datetime.now()]
     with open('commands.csv', 'a') as f:
         writer = csv.writer(f)
@@ -67,7 +83,7 @@ def main():
     while 1:
         initialMenu('FSE - TRABALHO 01')
         commands = ''
-        new_message = input('VER DISPOSITIVOS DE ENTRADA (1)\nVER DISPOSITIVOS DE SAÍDA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\nACIONAR/DESATIVAR DISPOSITIVOS DE ENTRADA INDIVIDUALMENTE(4)\nACIONAR/DESATIVAR DISPOSITIVOS DE SAÍDA INDIVIDUALMENTE(5)\nACIONAR/DESATIVAR TODOS DISPOSITIVOS DE SAÍDA(6)\nVISUALIZAR COMANDOS (7)\n')
+        new_message = input('VER DISPOSITIVOS DE SAÍDA (1)\nVER DISPOSITIVOS DE ENTRADA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\nACIONAR/DESATIVAR DISPOSITIVOS DE SAÍDA INDIVIDUALMENTE(4)\nACIONAR/DESATIVAR DISPOSITIVOS DE ENTRADA INDIVIDUALMENTE(5)\nACIONAR/DESATIVAR TODOS DISPOSITIVOS DE SAÍDA(6)\nVISUALIZAR COMANDOS (7)\n')
         # OPCOES DE LEITURA
         if int(new_message) >= 1 and int(new_message) < 4:
             commands = f'1,{new_message}'
@@ -78,8 +94,8 @@ def main():
             device_type = "outputs" if int(new_message) == 4 else "inputs"
             for x in devices[device_type]:
                 print(f'Dispositivo: {x["tag"]} | ID de seleção: {x["gpio"]}')
-            new_message = input('Selecione o dispositivo (DIGITE O ID DE SELEÇÃO): ')
-            commands = f'2,{new_message}, {device_type}'
+            current_device = input('Selecione o dispositivo (DIGITE O ID DE SELEÇÃO): ')
+            commands = f'2,{current_device}, {device_type}'
 
         if int(new_message) == 6:
             os.system('clear')
@@ -88,9 +104,12 @@ def main():
             commands = f'3,{new_message}'
             print('commands', commands)
 
+        if int(new_message) != 7: handleCommandsSave(commands)
+        if int(new_message) == 7:
+            handleReadCsvCommands()
 
-        primary_command = new_message.split(',')
-        handleCommandsSave(primary_command[0])
+        if int(new_message) == 8:
+                    handleReadCsvCommands()
         if int(new_message) == 3:
             while 1:
                 try:
@@ -103,9 +122,7 @@ def main():
             distributed_server_connection.send(commands.encode())
             threading.Thread(target=handleReceivedMessages, args=(distributed_server_connection,)).start()
         
-        if int(primary_command[0]) == 7:
-            handleReadCsvCommands()
-
+    
         clear_page = int(input('LIMPAR TELA (8)\n'))
         if clear_page == 8:
             os.system('clear')

@@ -1,5 +1,4 @@
- from socket import *
-
+from socket import *
 from markupsafe import string
 import RPi.GPIO as GPIO
 import adafruit_dht
@@ -160,7 +159,7 @@ def handleUpdateAllDevices(type):
         if GPIO.input(x["gpio"]) == 1 and type == 2:
             print(f'Dispositivo: {x["tag"]} | ESTÁ LIGADO')
             GPIO.output(x["gpio"], GPIO.LOW) 
-        print(GPIO.input(x["gpio"]))
+        print("ON" if GPIO.input(devices["inputs"][5]["gpio"]) == 1 else "OF")
         time.sleep(2.0)
 
     return handleOutputDevices()
@@ -194,11 +193,9 @@ def main():
 
         if int(message_received[0]) == 3:
             if int(message_received[1]) == 1:
-                print('deve ativar todos os dispositivos')
                 message_send = handleUpdateAllDevices(1)
                 threading.Thread(target=handleSendMessages, args=(message_send, )).start()
             if int(message_received[1]) == 2:
-                print('deve desativar todos os dispositivos')
                 message_send = handleUpdateAllDevices(2)
                 threading.Thread(target=handleSendMessages, args=(message_send, )).start()
 
@@ -217,3 +214,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
