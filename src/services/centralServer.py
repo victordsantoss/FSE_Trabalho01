@@ -7,8 +7,14 @@ import datetime
 import time
 
 # JSON CONFIGS
-with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json:
-    devices = json.load(meu_json)
+
+sala = int(input("DESEJA CONECTAR EM QUAL SALA?\nSALA 01 (1)\nSALA 02 (2): "))
+if sala == 1: 
+    print('ENTREI SALA 01')
+    with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json: devices = json.load(meu_json)
+if sala == 2:
+    print('ENTREI SALA 01')
+    with open("../utils/configuracao_sala_02.json", encoding='utf-8') as meu_json: devices = json.load(meu_json)
 
 default_host = devices['ip_servidor_central']
 default_port = devices['porta_servidor_central'] 
@@ -20,7 +26,7 @@ central_server = socket(AF_INET, SOCK_STREAM)
 
 central_server.bind((central_server_host, central_server_port))
 central_server.listen(5)
-print(f'Servidor Central conectado no HOST:  {central_server_host} e PORTA: {central_server_port}')
+print(f'Servidor Central conectado no HOST:  {central_server_host} | PORTA: {central_server_port} | {devices["nome"]}')
 
 distributed_server_connection, distributed_server_address = central_server.accept()
 print(f'O Servidor distribuido: {distributed_server_address} se conectou')
@@ -39,12 +45,11 @@ def handleReceivedTemperature(distributed_server_connection):
 
 def handleReceivedMessages(distributed_server_connection): 
     message_received = (distributed_server_connection.recv(1024)).decode()
-    if message_received != "":
-        json_received = eval(message_received) 
-        for device in json_received:
-            print(f'Dispositivo: {device["tag"]}')
-            print(f'Status: {device["state"]}')
-            print(f'-----------------------------')
+    json_received = eval(message_received) 
+    for device in json_received:
+        print(f'Dispositivo: {device["tag"]}')
+        print(f'Status: {device["state"]}')
+        print(f'-----------------------------')
 
 def handleGetCurrentDevice(type, pin_number):
     device = ""
@@ -60,6 +65,7 @@ def handleCommandsSave(commands):
         if (int(commands[1]) == 1): instruction = 'VER DISPOSITIVOS DE SAÍDA'
         if (int(commands[1]) == 2): instruction = 'VER DISPOSITIVOS DE ENTRADA'
         if (int(commands[1]) == 3): instruction = 'VER VALORES DE TEMPERATURA E HUMIDADE'
+        if (int(commands[1]) == 7): instruction = 'VER NÚMERO DE PESSOAS NA SALA'
     if (int(commands[0]) == 2):
         instruction = f'ACIONAMENTO/DESATIVAMENTO DO DISPOSITIVO {handleGetCurrentDevice(commands[2], int(commands[1]))}'
     if (int(commands[0]) == 3): 
@@ -83,11 +89,8 @@ def main():
     while 1:
         initialMenu('FSE - TRABALHO 01')
         commands = ''
-        new_message = input('VER DISPOSITIVOS DE SAÍDA (1)\nVER DISPOSITIVOS DE ENTRADA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\nACIONAR/DESATIVAR DISPOSITIVOS DE SAÍDA INDIVIDUALMENTE(4)\nACIONAR/DESATIVAR DISPOSITIVOS DE ENTRADA INDIVIDUALMENTE(5)\nACIONAR/DESATIVAR TODOS DISPOSITIVOS DE SAÍDA(6)\nVISUALIZAR COMANDOS (7)\n')
-        # OPCOES DE LEITURA
-        if int(new_message) >= 1 and int(new_message) < 4:
-            commands = f'1,{new_message}'
-        # OPÇOES DE ESCRITA/MUDANÇA DE STADO
+        new_message = input('VER DISPOSITIVOS DE SAÍDA (1)\nVER DISPOSITIVOS DE ENTRADA (2)\nVER VALORES DE TEMPERATURA E UMIDADE (3)\nACIONAR/DESATIVAR DISPOSITIVOS DE SAÍDA INDIVIDUALMENTE(4)\nACIONAR/DESATIVAR DISPOSITIVOS DE ENTRADA INDIVIDUALMENTE(5)\nACIONAR/DESATIVAR TODOS DISPOSITIVOS DE SAÍDA(6)\nVISUALIZAR NÚMERO DE PESSOAS NA SALA (7)\nVISUALIZAR COMANDOS (9)\n')
+        if int(new_message) >= 1 and int(new_message) < 4: commands = f'1,{new_message}'
         if int(new_message) == 4 or int(new_message) == 5:
             os.system('clear')
             initialMenu('DISPOSITIVOS')
@@ -104,12 +107,10 @@ def main():
             commands = f'3,{new_message}'
             print('commands', commands)
 
-        if int(new_message) != 7: handleCommandsSave(commands)
-        if int(new_message) == 7:
-            handleReadCsvCommands()
-
-        if int(new_message) == 8:
-                    handleReadCsvCommands()
+        if int(new_message) == 7: commands = f'1,{new_message}'
+        print(commands)
+        if int(new_message) != 9: handleCommandsSave(commands)
+        if int(new_message) == 9: handleReadCsvCommands()
         if int(new_message) == 3:
             while 1:
                 try:
@@ -121,12 +122,10 @@ def main():
         else:
             distributed_server_connection.send(commands.encode())
             threading.Thread(target=handleReceivedMessages, args=(distributed_server_connection,)).start()
-        
-    
+
         clear_page = int(input('LIMPAR TELA (8)\n'))
-        if clear_page == 8:
-            os.system('clear')
-    
+        if clear_page == 8: os.system('clear')
+
     distributed_server_connection.close()
 
 if __name__ == "__main__":
