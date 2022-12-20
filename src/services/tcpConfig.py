@@ -2,14 +2,18 @@ from socket import *
 import json
 
 # JSON CONFIGS
-sala = int(input("DESEJA CONECTAR EM QUAL SALA?\nSALA 01 (1)\nSALA 02 (2): "))
-if sala == 1: 
+sala = int(input("DESEJA CONECTAR EM QUAL SALA?\nSALA 01 (1)\nSALA 02 (2)\nSALA 03 (3)\nSALA 04 (4): "))
+if sala == 1:
     with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json: devices = json.load(meu_json)
 if sala == 2:
     with open("../utils/configuracao_sala_02.json", encoding='utf-8') as meu_json: devices = json.load(meu_json)
+if sala == 3:
+    with open("../utils/configuracao_sala_03.json", encoding='utf-8') as meu_json: devices = json.load(meu_json)
+if sala == 4:
+    with open("../utils/configuracao_sala_04.json", encoding='utf-8') as meu_json: devices = json.load(meu_json)
 
 default_host = devices['ip_servidor_central']
-default_port = devices['porta_servidor_central'] 
+default_port = devices['porta_servidor_central']
 central_server = socket(AF_INET, SOCK_STREAM)
 
 def handleTcpCentralConfig():

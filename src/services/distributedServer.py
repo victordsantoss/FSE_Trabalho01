@@ -20,31 +20,31 @@ def handleOutputDevices():
         {
             "type": "lampada",
             "tag": "Lâmpada 01",
-            "gpio": 18,
+            "gpio": devices["outputs"][0]["gpio"],
             "state": "ON" if GPIO.input(devices["outputs"][0]["gpio"]) == 1 else "OF"
         },
         {
             "type": "lampada",
             "tag": "Lâmpada 02",
-            "gpio": 23,
+            "gpio": devices["outputs"][1]["gpio"],
             "state": "ON" if GPIO.input(devices["outputs"][1]["gpio"]) == 1 else "OF"
         },
         {
             "type": "projetor",
             "tag": "Projetor Multimidia",
-            "gpio": 25,
+            "gpio": devices["outputs"][2]["gpio"],
             "state":  "ON" if GPIO.input(devices["outputs"][2]["gpio"]) == 1 else "OF"
         },
         {
             "type": "ar-condicionado",
             "tag": "Ar-Condicionado (1º Andar)",
-            "gpio": 24,
+            "gpio": devices["outputs"][3]["gpio"],
             "state": "ON" if GPIO.input(devices["outputs"][3]["gpio"]) == 1 else "OF"
         },
         {
             "type": "alarme",
             "tag": "Sirene do Alarme",
-            "gpio": 8,
+            "gpio": devices["outputs"][4]["gpio"],
             "state": "ALERTA ALARME ESTÁ ACIONADO!!" if GPIO.input(devices["outputs"][4]["gpio"]) == 1 else "OF"
         }
     ]
@@ -56,37 +56,37 @@ def handleInputDevices():
         {
           "type": "presenca",
           "tag": "Sensor de Presença",
-          "gpio": 7,
+          "gpio": devices["inputs"][0]["gpio"],
           "state": "ON" if GPIO.input(devices["inputs"][0]["gpio"]) == 1 else "OF"
         },
         {
             "type": "fumaca",
             "tag": "Sensor de Fumaça",
-            "gpio": 1,
+            "gpio": devices["inputs"][1]["gpio"],
             "state": "ON" if GPIO.input(devices["inputs"][1]["gpio"]) == 1 else "OF"
         },
         {
             "type": "janela",
             "tag": "Sensor de Janela",
-            "gpio": 12,
+            "gpio": devices["inputs"][2]["gpio"],
             "state": "ON" if GPIO.input(devices["inputs"][2]["gpio"]) == 1 else "OF"
         },
         {
             "type": "porta",
             "tag": "Sensor de Porta",
-            "gpio": 16,
+            "gpio": devices["inputs"][3]["gpio"],
             "state": "ON" if GPIO.input(devices["inputs"][3]["gpio"]) == 1 else "OF"
         },
         {
             "type": "contagem",
             "tag": "Sensor de Contagem de Pessoas Entrada",
-            "gpio": 20,
+            "gpio": devices["inputs"][4]["gpio"],
             "state": "ON" if GPIO.input(devices["inputs"][4]["gpio"]) == 1 else "OF"
         },
         {
             "type": "contagem",
             "tag": "Sensor de Contagem de Pessoas Saída",
-            "gpio": 21,
+            "gpio": devices["inputs"][5]["gpio"],
             "state": "ON" if GPIO.input(devices["inputs"][5]["gpio"]) == 1 else "OF"
         }
     ]
@@ -94,7 +94,7 @@ def handleInputDevices():
     return res
 
 def handleTemperature():
-    dhtDevice = adafruit_dht.DHT22(board.D18 if sala == 2 else board.D4, use_pulseio=False) 
+    dhtDevice = adafruit_dht.DHT22(board.D18 if sala == 2 or sala == 4 else board.D4, use_pulseio=False)
     try:
         temperature_c = dhtDevice.temperature
         temperature_f = temperature_c * (9 / 5) + 32
@@ -140,6 +140,7 @@ def handleUpdateAllDevices(type):
 
 def handleAlarms():
     GPIO.setup(devices["inputs"][0]["gpio"], GPIO.IN) 
+    GPIO.setup(devices["inputs"][1]["gpio"], GPIO.IN) 
     GPIO.setup(devices["inputs"][2]["gpio"], GPIO.IN) 
     GPIO.setup(devices["inputs"][3]["gpio"], GPIO.IN) 
     GPIO.setup(devices["outputs"][4]["gpio"], GPIO.OUT) 
@@ -162,7 +163,12 @@ def handleAlarms():
             "gpio": 16,
             "state": "ON" if GPIO.input(devices["inputs"][3]["gpio"]) == 1 else "OF"
         },
-
+        {
+            "type": "fumaca",
+            "tag": "Sensor de Fumaça",
+            "gpio": 1,
+            "state": "ON" if GPIO.input(devices["inputs"][1]["gpio"]) == 1 else "OF"
+        },
     ]
     while 1:
         for d in res:
@@ -179,18 +185,22 @@ def handleCountPeople():
     GPIO.setup(devices["inputs"][5]["gpio"], GPIO.IN) 
     GPIO.add_event_detect(devices['inputs'][4]['gpio'], GPIO.RISING)
     GPIO.add_event_detect(devices['inputs'][5]['gpio'], GPIO.RISING)
+    global aux
     people = 0
     try:
         while 1:
             time.sleep(0.0001)
             if GPIO.event_detected(devices["inputs"][4]["gpio"]):
                 people = people + 1
+                print("Entrou +1", people)
             if GPIO.event_detected(devices["inputs"][5]["gpio"]):
-                people = people - 1
                 if people < 0: people = 0
+                people = people - 1
+                print("Saiu +1", people)
             aux = people
     except RuntimeError as error:
         print("error", error)
+
 
 def main():
     handleGPIOConfig()
@@ -198,7 +208,7 @@ def main():
         message = distributed_server.recv(1024)
         message = message.decode()
         message_received = message.split(',')
-        if int(message_received[0]) == 1:  
+        if int(message_received[0]) == 1:
             if int(message_received[1]) == 1:
                 message_send = handleOutputDevices()
                 distributed_server.send(message_send.encode())
@@ -217,7 +227,7 @@ def main():
                     }
                 ]
                 res = json.dumps(res)
-                distributed_server.send(res.encode())  
+                distributed_server.send(res.encode()) 
 
         if int(message_received[0]) == 2:
             message_send = handleUpdateDeviceState(int(message_received[1]), message_received[2])
