@@ -6,43 +6,12 @@ import threading
 import json
 import board
 
-# JSON CONFIGS
-sala = int(input("DESEJA CONECTAR EM QUAL SALA? (DEVE SER A MESMA ESCOLHIDA PELO SERVIDOR CENTRAL)\nSALA 01 (1)\nSALA 02 (2): "))
-global devices
-if sala == 1: 
-    print('ENTREI SALA 01')
-    with open("../utils/configuracao_sala_01.json", encoding='utf-8') as meu_json: devices = json.load(meu_json)
-if sala == 2:
-    print('ENTREI SALA 01')
-    with open("../utils/configuracao_sala_02.json", encoding='utf-8') as meu_json: devices = json.load(meu_json)
+# EXTERNAL FILES 
+from tcpConfig import devices, handleTcpDistriConfig
+from gpioConfig import handleGPIOConfig
 
 # SERVER CONFIGS
-default_host = devices['ip_servidor_central']
-default_port = devices['porta_servidor_central'] 
-distributed_server = socket(AF_INET, SOCK_STREAM)
-distributed_server.connect((default_host, default_port))
-
-global count
-countP = 0
-
-# GPIO CONFIGS
-def handleGPIOConfig():
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-    # DISPOSITIVOS DE SAÍDA
-    GPIO.setup(devices["outputs"][0]["gpio"], GPIO.OUT)  
-    GPIO.setup(devices["outputs"][1]["gpio"], GPIO.OUT)
-    GPIO.setup(devices["outputs"][2]["gpio"], GPIO.OUT)  
-    GPIO.setup(devices["outputs"][3]["gpio"], GPIO.OUT)  
-    GPIO.setup(devices["outputs"][4]["gpio"], GPIO.OUT) 
-    # DISPOSITIVOS DE ENTRADA
-    GPIO.setup(devices["inputs"][0]["gpio"], GPIO.IN) 
-    GPIO.setup(devices["inputs"][1]["gpio"], GPIO.IN) 
-    GPIO.setup(devices["inputs"][2]["gpio"], GPIO.IN)
-    GPIO.setup(devices["inputs"][3]["gpio"], GPIO.IN) 
-    GPIO.setup(devices["inputs"][4]["gpio"], GPIO.IN) 
-    GPIO.setup(devices["inputs"][5]["gpio"], GPIO.IN) 
-
+distributed_server, sala = handleTcpDistriConfig()
 
 def handleOutputDevices():
     if (GPIO.input(devices["inputs"][0]["gpio"]) == 1) or (GPIO.input(devices["inputs"][2]["gpio"]) == 1):  GPIO.output(devices["outputs"][4]["gpio"], GPIO.HIGH) 
@@ -125,7 +94,7 @@ def handleInputDevices():
     return res
 
 def handleTemperature():
-    dhtDevice = adafruit_dht.DHT22(board.D18, use_pulseio=False) # "DHT22": 4
+    dhtDevice = adafruit_dht.DHT22(board.D18 if sala == 2 else board.D4, use_pulseio=False) 
     try:
         temperature_c = dhtDevice.temperature
         temperature_f = temperature_c * (9 / 5) + 32
@@ -161,37 +130,67 @@ def handleUpdateDeviceState(pin_number, device_type):
 
 def handleUpdateAllDevices(type):
     for x in devices['outputs']:
-        print(f'Dispositivo: {x["tag"]} | ID de seleção: {x["gpio"]}')
         if GPIO.input(x["gpio"]) == 0 and type == 1:
-            print(f'Dispositivo: {x["tag"]} | ESTÁ LIGADO')
             GPIO.output(x["gpio"], GPIO.HIGH) 
         if GPIO.input(x["gpio"]) == 1 and type == 2:
-            print(f'Dispositivo: {x["tag"]} | ESTÁ LIGADO')
             GPIO.output(x["gpio"], GPIO.LOW) 
-        print("ON" if GPIO.input(devices["inputs"][5]["gpio"]) == 1 else "OF")
+        print(f'Dispositivo: {x["tag"]} | ID de seleção: {x["gpio"]} | Estado: {"ON" if GPIO.input(x["gpio"]) == 1 else "OF"}')
         time.sleep(0.5)
-
     return handleOutputDevices()
+
+def handleAlarms():
+    GPIO.setup(devices["inputs"][0]["gpio"], GPIO.IN) 
+    GPIO.setup(devices["inputs"][2]["gpio"], GPIO.IN) 
+    GPIO.setup(devices["inputs"][3]["gpio"], GPIO.IN) 
+    GPIO.setup(devices["outputs"][4]["gpio"], GPIO.OUT) 
+    res = [
+        {
+          "type": "presenca",
+          "tag": "Sensor de Presença",
+          "gpio": 7,
+          "state": "ON" if GPIO.input(devices["inputs"][0]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "janela",
+            "tag": "Sensor de Janela",
+            "gpio": 12,
+            "state": "ON" if GPIO.input(devices["inputs"][2]["gpio"]) == 1 else "OF"
+        },
+        {
+            "type": "porta",
+            "tag": "Sensor de Porta",
+            "gpio": 16,
+            "state": "ON" if GPIO.input(devices["inputs"][3]["gpio"]) == 1 else "OF"
+        },
+
+    ]
+    while 1:
+        for d in res:
+            print (f'{d["tag"]}: {d["state"]}')
+            if d["state"] == "ON":
+                print(f'ALERTA! O SENSOR {d["tag"]} está LIGADO - O ALARME SERÁ ATIVADO')
+                GPIO.output(devices["outputs"][4]["gpio"], GPIO.HIGH) 
+        time.sleep(5.0)
+
+aux = 0
 
 def handleCountPeople():
     GPIO.setup(devices["inputs"][4]["gpio"], GPIO.IN) 
     GPIO.setup(devices["inputs"][5]["gpio"], GPIO.IN) 
     GPIO.add_event_detect(devices['inputs'][4]['gpio'], GPIO.RISING)
     GPIO.add_event_detect(devices['inputs'][5]['gpio'], GPIO.RISING)
+    people = 0
     try:
         while 1:
             time.sleep(0.0001)
             if GPIO.event_detected(devices["inputs"][4]["gpio"]):
-                countP = countP + 1
-                print("Entrou +1", countP)
+                people = people + 1
             if GPIO.event_detected(devices["inputs"][5]["gpio"]):
-                countP = countP - 1
-                if countP < 0:
-                    countP = 0
-            print("Saiu +1", countP)
-            print("Número de Pessoas atual na sala: ", countP)
-    except:
-        print('Error counting people')
+                people = people - 1
+                if people < 0: people = 0
+            aux = people
+    except RuntimeError as error:
+        print("error", error)
 
 def main():
     handleGPIOConfig()
@@ -199,7 +198,6 @@ def main():
         message = distributed_server.recv(1024)
         message = message.decode()
         message_received = message.split(',')
-        print("message",message_received)
         if int(message_received[0]) == 1:  
             if int(message_received[1]) == 1:
                 message_send = handleOutputDevices()
@@ -215,7 +213,7 @@ def main():
                 res = [
                     {
                         "tag": 'Sensor de Contagem de Pessoas',
-                        "state": f'Número de Pessoas na sala: {countP}'
+                        "state": f'Número de Pessoas na sala: {aux}'
                     }
                 ]
                 res = json.dumps(res)
@@ -233,24 +231,8 @@ def main():
                 message_send = handleUpdateAllDevices(2)
                 distributed_server.send(message_send.encode())
 
-def handleAlarms():
-    GPIO.setup(devices["inputs"][0]["gpio"], GPIO.IN) 
-    GPIO.setup(devices["inputs"][2]["gpio"], GPIO.IN) 
-    GPIO.setup(devices["outputs"][4]["gpio"], GPIO.OUT) 
-    while 1:
-        statePres = "ON" if GPIO.input(devices["inputs"][0]["gpio"]) == 1 else "OF"
-        stateFum = "ON" if GPIO.input(devices["inputs"][2]["gpio"]) == 1 else "OF"
-        print(f'{devices["inputs"][0]["tag"]}: {statePres}, {devices["inputs"][2]["tag"]}: {stateFum}')
-        if statePres == "ON":
-            print(f'ALERTA! O SENSOR {devices["inputs"][0]["gpio"]} LIGADO - O ALARME SERÁ ATIVADO')
-            GPIO.output(devices["outputs"][4]["gpio"], GPIO.HIGH) 
-        if stateFum == "ON":
-            print(f'ALERTA! O SENSOR {devices["inputs"][2]["gpio"]} LIGADO - O ALARME SERÁ ATIVADO')
-        time.sleep(5.0)
-
 threading.Thread(target=handleAlarms,).start()
 threading.Thread(target=handleCountPeople,).start()
 
 if __name__ == "__main__":
     main()
-
