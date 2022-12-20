@@ -21,20 +21,29 @@ Este trabalho foi desenvolvido usando a linguagem [Python](https://www.python.or
     - Visualizar estado dos disposivitos de entrada (Sensores de presença, fumaça, porta, janela e contagem de pessoas )
     - Visualizar a temperatura e humidade atual a cada 2 segundos.
     - Acionar dispositivos de saída (Lâmpadas, Projetores e Ar-condicionado) individualmente. 
-    - Acionar dispositivos de entrada (Sensores de presença, fumaça, porta, janela e contagem de pessoas ) individualmente.  
     - Acionar/Desativar todos os dispositivos de entrada (Lâmpadas, Projetores e Ar-condicionado).
-    - Salvar omandos em arquivo CSV com dia e hora, alêm de disponibilizar a visualização deles no prompt de comando. 
-## Limitações 
+    - Salvar comandos em arquivo CSV com dia e hora, alêm de disponibilizar a visualização deles no prompt de comando. 
+    - Visualizar número de pessoas na sala escolhida. 
+    - Acionamento do alarme por meio da ativação dos sensores de presença, porta ou janela. 
+## Possíveis melhorias
 - O servidor central está se conectando somente a um servidor distribuído (Conectando somente a uma sala por vez). 
-- A contagem de pessoas da sala não está sendo realizada.
-- As rotinas de acionamento do alarme não estão sendo retornadas ao servidor central, somente é exibida no distribuído. 
-## Possíveis melhorias 
+- As rotinas de acionamento do alarme não estão sendo retornadas ao servidor central em tempo real, somente é exibida no distribuído (para visualizar no servidor central é necessário acionar o comando de ver o estado dos dispositivos. 
 
-
-## Como rodar 
-
-Baixar adafruit
-Verificar pino do sensor de temperatura
+## Instruções/Como rodar 
+- Acessar a placa
+- Ter as dependências devidamente instaladas no ambiente de teste
+- Acessar a pasta services
+- Rodar o servidor central:
+```bash
+    python3 centralServer.py
+```
+- Selecionar a sala desejada selecionando digitando 1 ou 2
+- Rodar o servidor ditribuido:
+```bash
+    python3 ditriServer.py
+```
+- Selecionar a sala desejada selecionando digitando 1 ou 2 (A mesma selecionada no servidor central)
+- Digitar algum dos comando exibidos no menu.
 
 ## Screenshots 
 
