@@ -49,6 +49,7 @@ Este trabalho foi desenvolvido usando a linguagem [Python](https://www.python.or
 ## Observações
 É necessário estar na placa responsável pela sala usada. 
 - Para o exemplo do vídeo foi usado a RASP43 e SALA 04
+- CRTL + C Interrompe a exibição de temperatura e umidade (Apertando a tecla 8 o menu inicial volta)
 
 ## Screenshots 
 #### Escolha de Salas no servidor central
